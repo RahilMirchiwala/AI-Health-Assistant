@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Health Assistant</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .container { width: 100%; max-width: 600px; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 26px; font-weight: 700; color: #1a5276; }
+  .header p { font-size: 14px; color: #777; margin-top: 4px; }
+  .card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+  .card h2 { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 18px; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+  select, input { padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; color: #333; background: #fafafa; outline: none; transition: border-color 0.15s; }
+  select:focus, input:focus { border-color: #1a5276; background: white; }
+  .btn { width: 100%; padding: 13px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; background: #1a5276; color: white; cursor: pointer; transition: all 0.15s; margin-top: 6px; }
+  .btn:hover { background: #2471a3; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { background: #aaa; cursor: not-allowed; }
+  .result { display: none; }
+  .outcome-badge { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 30px; font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+  .outcome-positive { background: #FCEBEB; color: #791F1F; }
+  .outcome-negative { background: #EAF3DE; color: #27500A; }
+  .advice-box { background: #f8fafc; border-left: 4px solid #1a5276; border-radius: 0 8px 8px 0; padding: 16px; font-size: 14px; line-height: 1.7; color: #333; white-space: pre-wrap; }
+  .disclaimer { margin-top: 12px; font-size: 12px; color: #e74c3c; background: #fef9f9; border: 1px solid #f5c6cb; border-radius: 8px; padding: 10px 14px; }
+  .loading { text-align: center; padding: 20px; color: #888; font-size: 14px; display: none; }
+  .dot { display: inline-block; animation: bounce 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🏥 AI Health Assistant</h1>
+    <p>Enter your symptoms for AI-powered health analysis</p>
+  </div>
+
+  <div class="card">
+    <h2>Patient Information</h2>
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label>Fever</label>
+        <select id="fever">
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Cough</label>
+        <select id="cough">
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Fatigue</label>
+        <select id="fatigue">
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Difficulty Breathing</label>
+        <select id="difficulty_breathing">
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Age</label>
+        <input type="number" id="age" value="25" min="1" max="100">
+      </div>
+
+      <div class="form-group">
+        <label>Gender</label>
+        <select id="gender">
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Blood Pressure</label>
+        <select id="blood_pressure">
+          <option value="Low">Low</option>
+          <option value="Normal">Normal</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Cholesterol</label>
+        <select id="cholesterol">
+          <option value="Normal">Normal</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+
+      <div class="form-group full">
+        <button class="btn" onclick="analyze()" id="btn">Analyze My Health</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <span class="dot">●</span>
+    <span class="dot">●</span>
+    <span class="dot">●</span>
+    <p style="margin-top:8px">Analyzing your symptoms...</p>
+  </div>
+
+  <div class="card result" id="result">
+    <h2>Health Analysis Result</h2>
+    <div id="outcome-badge"></div>
+    <div class="advice-box" id="advice"></div>
+    <div class="disclaimer">⚠️ This is AI-generated advice only. Please consult a qualified medical professional for proper diagnosis and treatment.</div>
+  </div>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:8000/predict";
+
+  async function analyze() {
+    const btn = document.getElementById("btn");
+    const loading = document.getElementById("loading");
+    const result = document.getElementById("result");
+
+    const data = {
+      fever: document.getElementById("fever").value,
+      cough: document.getElementById("cough").value,
+      fatigue: document.getElementById("fatigue").value,
+      difficulty_breathing: document.getElementById("difficulty_breathing").value,
+      age: parseInt(document.getElementById("age").value),
+      gender: document.getElementById("gender").value,
+      blood_pressure: document.getElementById("blood_pressure").value,
+      cholesterol: document.getElementById("cholesterol").value
+    };
+
+    btn.disabled = true;
+    loading.style.display = "block";
+    result.style.display = "none";
+
+    try {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+
+      const badge = document.getElementById("outcome-badge");
+      badge.className = "outcome-badge " + (json.outcome === "Positive" ? "outcome-positive" : "outcome-negative");
+      badge.innerHTML = json.outcome === "Positive" ? "⚠️ At Risk — Positive" : "✅ Low Risk — Negative";
+
+      document.getElementById("advice").textContent = json.advice;
+      result.style.display = "block";
+
+    } catch (err) {
+      alert("Could not connect to API. Make sure server is running on port 8000.");
+    }
+
+    btn.disabled = false;
+    loading.style.display = "none";
+  }
+</script>
+</body>
+</html>
